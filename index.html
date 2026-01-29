@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <!-- スマホ対応の必須タグ -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+        <title>IndexedDB変数修正模写</title>
+        <style>
+            /* 常に縦スクロールバーの領域を確保する */
+            html{
+                overflow: scroll;
+            }
+
+            body{
+                background-color: #2c3e50;
+                color: white;
+                font-family: "Helvetica Neue",Arial,"Hiragino Kaku Gothic ProN","Hiragino Sans",sans-serif;
+                text-align: center;
+                margin: 0;
+                padding: 20px;
+            }
+
+            /* iPhoneを横向きにしたときに、勝手に文字が大きくなるのを防ぐらしい */
+            html {
+                -webkit-text-size-adjust: 100%;
+            }
+
+            /* iPhoneのボタンの変な影を消すらしい */
+            button {
+                -webkit-appearance: none;
+                appearance: none;
+            }
+
+            /* ボタン共通スタイル */
+            button{
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+
+                width: 100%;
+                max-width: 500px;
+                margin: 15px auto;
+                font-size:  1.2rem;
+                font-weight: bold;
+                padding: 15px;
+                /* margin: 10px; */
+                border: none;
+                border-radius: 12px;
+                /* cursor: pointer;
+                box-shadow: 0 4px #1a252f; */
+                box-sizing: border-box;
+            }
+
+            /* アコーディオン用のスタイル */
+            .accordion-content{
+                display: block;
+                width: 100%;
+                max-width: 500px;
+                margin: 0 auto;
+                box-sizing: border-box;
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.3s ease-out;
+                background: rgba(255,255,255,0.05);
+                border-radius: 10px;
+            }
+
+            .accoridon-title{
+                background-color:#444;
+                color: white;
+                cursor: pointer;
+                padding: 10px;
+                margin: 20px auto;
+                border-radius: 10px;
+                user-select: none;
+                box-sizing: border-box;
+            }
+
+            #dbReset{
+                background-color: transparent;
+                color: #999;
+                border: 1px solid #666;
+                width: auto;
+                margin-top: 50px;
+            }
+
+
+            button:active {
+                box-shadow: 0 1px #666;
+                transform: translateY(2px);
+                /* 押し込んだ時に少し暗くする */
+                background-image: linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.2));
+            }
+
+            button:disabled {
+                background-color: #7f8c8d !important;
+                box-shadow: none;
+                transform: none;
+                opacity: 0.6;
+            }
+
+            /* 各ボタンの色分け */
+            #recStart {background-color: #e74c3c; color:white;}
+            #recStop {background-color: #c0392b; color: white;}
+            #playStart {background-color: #27ae60; color:white;}
+            #playBefore {background-color: #5d3f6a; color:white;}
+            #playNext {background-color: #2980b9; color:white;}
+            #playOneMore {background-color: #f39c12; color:white;}
+            
+            /* 状態表示 */
+            #status {
+                background-color: #34495e;
+                padding: 10px;
+                /* font-size: 1.5rem; */
+                color: #f1c40f;
+                border-radius: 5px;
+                margin: 20px 0;
+                /* height: 1.5rem; */
+            }
+
+            /* カードの枚数表示 */
+            #numberOfCards {
+                background-color: #34495e;
+                padding: 10px;
+                border-radius: 5px;
+                margin-top: 20px;
+            }
+
+            /* 録音リスト（スクロールできるように） */
+            #list{               
+                list-style: none;
+                padding: 0;
+                margin: 0;
+                
+                background:  rgba(255,255,255,0.1);
+                border-radius: 10px ;
+            }
+
+            #list li{
+                padding: 15px;
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+                display: flex;
+                justify-content: space-around;
+                align-items: center;
+            }
+
+            /* リストの中にあるボタン専用の設定 */
+            #list button{
+                width: auto;
+                margin: 0 5px;
+                padding: 8px 15px;
+                font-size: 0.9rem;
+                box-shadow: 0 4px #63686b;
+            }
+            
+            /* 最後のアイテムの線は消す */
+            #list li:last-child{
+                border-bottom: none;
+            }
+
+            /* 2つ並べるための枠組み */
+            .button-row {
+                display: flex;          /* 横に並べる */
+                justify-content: center; /* 中央寄せ */
+                gap: 10px;              /* ボタン同士の隙間 */
+                width: 100%;
+                max-width: 500px;
+                margin: 0 auto;         /* 全体を中央寄せ */
+            }
+
+            /* 横並びの時のボタン専用スタイル */
+            .button-row button {
+                flex: 1;                /* 幅を均等に分ける */
+                margin: 10px 0;         /* 縦の余白だけ残す */
+                font-size: 1.2rem;        /* 2つ並ぶので文字を少し小さく */
+                padding: 15px 5px;      /* 左右のパディングを削る */
+            }
+
+            /* 「次の札」ボタン（単体）は今まで通りのスタイル */
+            #playNext {
+                font-size: 1.6rem;
+            }
+
+
+        </style>
+    </head>
+    <body>
+
+        <h2>★ かるた読み札 ★<br>録音・再生サイト</h2>
+
+            <button id="recStart">
+                <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
+                    <path d="M480-400q-50 0-85-35t-35-85v-240q0-50 35-85t85-35q50 0 85 35t35 85v240q0 50-35 85t-85 35Zm-40 280v-123q-104-14-172-93t-68-184h80q0 83 58.5 141.5T480-320q83 0 141.5-58.5T680-520h80q0 105-68 184t-172 93v123h-80Z"/>
+                </svg>録音開始</button>
+            <h3 id="status">　</h3>
+            <button id="recStop">
+                <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor"><path d="M200-200h560v-560H200v560Z"/></svg>
+                停止して保存
+            </button>
+            
+            <button id="playStart" onclick="playStart()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M5 3l14 9-14 9V3z"/>
+                </svg>かるた開始
+            </button>
+
+            <div class="button-row">
+                <button id="playBefore" onclick="playBefore()" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
+                        <path d="M220-240v-480h80v480h-80Zm520 0L380-480l360-240v480Z"/>
+                    </svg>
+                    前の札
+                </button>
+                <button id="playOneMore" onclick="playOneMore()" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
+                        <path d="M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q59 0 111.5 21T687-720h-87v80h220v-220h-80v90q-48-43-110-66.5T480-860q-158 0-269 111T100-480q0 158 111 269t269 111q116 0 209.5-61T825-325l-71-36q-33 71-101 116T480-160Z"/>
+                    </svg>
+                    もう一度
+                </button>
+            </div>
+            <button id="playNext" onclick="playNext()" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
+                    <path d="M660-240v-480h80v480h-80Zm-440 0v-480l360 240-360 240Z"/>
+                </svg>次の札
+            </button>
+            <h3 id="numberOfCards">　</h3>
+
+            <div id="accordion-btn" class="accordion-title" onclick="toggleAccordion()">
+                <span id="arrow">▼</span> 保存された音声を確認する
+            </div>
+
+            <div id="accordion" class="accordion-content">
+                <ul id="list"></ul>
+            </div>
+
+            <button id="dbReset">録音全削除</button> <!-- audioDBを削除 -->
+            
+        <script>
+
+            let db;//変数データベースを定義
+            let mediaRecorder;//メディアレコーダーを定義
+            let chunks = [];//録音したやつを入れる配列を定義
+
+            //カウントダウン用
+            const MAX_SEC = 15; //録音時間もこれで設定
+            const status = document.getElementById("status");
+            let remaining = 0;
+            let countdownTimer = null;
+            let stopTimer = null;
+
+
+            //DBを開く
+            const request = indexedDB.open("audioDB",1);
+            request.onupgradeneeded = event =>{
+                db = event.target.result;
+
+                if(!db.objectStoreNames.contains("voices")){
+                    db.createObjectStore("voices",{keyPath:"id",autoIncrement:true});
+                }
+            };
+
+            request.onsuccess = event =>{ //リクエストが成功したら{}の中を実行
+                db = event.target.result;
+                console.log("DB接続完了！リストを表示するばい")
+
+                showList();
+            };
+
+        
+
+            //録音開始
+            let stream;
+            let stopTimerId; 
+            document.getElementById("recStart").onclick = async ()=>{
+
+                disableDuringRecording()
+
+                stream = await navigator.mediaDevices.getUserMedia({audio:true});
+                mediaRecorder = new MediaRecorder(stream);
+                chunks = [];
+
+                mediaRecorder.ondataavailable = event => chunks.push(event.data); //リクエストが成功した=>を実行
+                mediaRecorder.start();
+
+                //カウントダウン開始
+                remaining = MAX_SEC;
+                status.textContent = `録音中 残り${remaining}秒`;
+
+                countdownTimer = setInterval(()=>{
+                    remaining--;
+                    status.textContent = `録音中 残り${remaining}秒`;
+
+                    if(remaining <= 0){
+                        clearInterval(countdownTimer);
+                    }
+                },1000);
+
+                
+                //止め忘れ防止のため、時間がったら録音を止める
+                stopTimerId = setTimeout(() =>{
+                    recStop();
+                },MAX_SEC * 1000);
+
+            };
+
+            
+
+            //停止して保存
+            document.getElementById("recStop").onclick = recStop;
+            function recStop(){
+
+                enableAfterRecording();
+
+                //タイマー停止
+                if(countdownTimer){
+                    clearInterval(countdownTimer);
+                    countdownTimer = null;
+                }
+
+                //タイマーがあれば解除
+                if(stopTimerId){
+                    clearTimeout(stopTimerId);
+                    stopTimerId = null;
+                }
+
+                status.textContent = "　";
+
+
+                //録音中ではないときに停止ボタンを押したとき
+                if(!mediaRecorder || mediaRecorder.state !=="recording"){
+                    console.log("録音中ではないため止めません");
+                    return;
+                }
+
+                mediaRecorder.stop();
+                
+                mediaRecorder.onstop = () =>{
+                    const blob = new Blob(chunks,{type:"audio/mp4"}); //"audio/webm"はiPhoneで使えない
+
+                    const tx = db.transaction("voices","readwrite");
+                    const store = tx.objectStore("voices");
+                    const req = store.count(); //storeの数を数える。非同期なのでonsuccessが必要
+
+                    req.onsuccess = () =>{
+                        store.add({audio:blob}); //idはautoIncrementで自動付与
+                                                // ※録音したものを削除してもidは戻らない
+                        console.log(`voices は ${req.result} 件あります`);
+                    }
+                    tx.oncomplete = () => {
+                      console.log("count 完了");
+                      showList();
+                    };
+                };
+                
+                //マイクを完全に止める※しないと電力消費し続ける
+                const tracks = stream?.getTracks();
+                if(tracks){
+                    tracks.forEach((track) => {
+                      track.stop();
+                      console.log("マイクは完全に停止しました")
+                    });
+                    stream = null;
+                }
+
+            };
+
+            //一覧を表示
+            function showList(){
+                const ul = document.getElementById("list");
+                ul.innerHTML = "";//一度クリア
+
+                const tx = db.transaction("voices", "readonly");
+                const store = tx.objectStore("voices");
+                const req = store.getAll();
+
+                req.onsuccess = () =>{
+                    const results = req.result;
+
+                    results.forEach(element => {
+                        const li = document.createElement("li");
+                    
+
+                        const playbtn = document.createElement("button");
+                        playbtn.textContent = "再生";
+                        playbtn.onclick = ()=> playSound(element.id);
+
+                        const delBtn = document.createElement("button");
+                        delBtn.textContent = "削除";
+                        delBtn.onclick = () =>deleteSound(element.id);
+
+                        li.textContent = `id${element.id}`;
+
+                        li.appendChild(playbtn);
+                        li.appendChild(delBtn);
+
+                        ul.appendChild(li);
+                        console.log(`id${element.id}をリスト追加したで`)
+                        
+                    });
+                    const content =document.getElementById("accordion");
+                    if(content && content.style.maxHeight && content.style.maxHeight !=="0px"){
+                        content.style.maxHeight = content.scrollHeight + "px";
+                    }
+                }
+            }
+
+            //かるた中の一覧表示。削除ボタンなし
+            function showListOnlyPlay(){
+                const ul = document.getElementById("list");
+                ul.innerHTML = "";//一度クリア
+
+                const tx = db.transaction("voices", "readonly");
+                const store = tx.objectStore("voices");
+                const req = store.getAll();
+
+                req.onsuccess = () =>{
+                    const results = req.result;
+
+                    results.forEach(element => {
+                        const li = document.createElement("li");
+                    
+                        const playbtn = document.createElement("button");
+                        playbtn.textContent = "再生";
+                        playbtn.onclick = ()=> playSound(element.id);
+
+                        const delBtn = document.createElement("button");
+                        delBtn.textContent = "削除";
+                        delBtn.onclick = () =>deleteSound(element.id);
+                        delBtn.disabled = true;
+
+                        li.textContent = `id${element.id}`;
+
+                        li.appendChild(playbtn);
+                        li.appendChild(delBtn);
+
+                        ul.appendChild(li);
+                        console.log(`id${element.id}をリスト追加したで`)
+                        
+                    });
+                }
+            }
+
+            //データベースから音声を再生
+            function playSound(id){
+                const tx = db.transaction("voices","readonly");
+                const store = tx.objectStore("voices");
+                const req = store.get(id);
+
+                req.onsuccess = ()=>{
+                    const audioURL = URL.createObjectURL(req.result.audio);
+                    const audio = new Audio(audioURL);
+
+                    // 再生が終わったらメモリを開放する※これがないとどんどんメモリに溜まるらしい
+                    audio.onended = () =>{
+                        URL.revokeObjectURL(audioURL);
+                        console.log("メモリを解放しました")
+                    };
+
+                    audio.play();
+
+                };
+            }
+
+            //データベースの読み札を削除
+            function deleteSound(id){
+                const tx = db.transaction("voices", "readwrite");
+                const store = tx.objectStore("voices");
+
+                store.delete(id);
+
+                tx.oncomplete = () => {
+                    showList();
+                };
+            }
+
+            //データベースからidだけを読みだして配列にする？
+            function loadIds(){
+                return new Promise(resolve =>{
+                    const tx = db.transaction("voices","readonly");
+                    const store = tx.objectStore("voices");
+        
+                    const ids = [];
+        
+                    store.openCursor().onsuccess = e =>{
+                        const cursor = e.target.result;
+                        if(cursor){
+                            ids.push(cursor.key); //←id
+                            cursor.continue();
+                        }
+                    };
+                    tx.oncomplete = ()=> resolve(ids);
+                });
+            }
+
+            //idをシャッフル
+            function shuffle(array){
+                for(let i = array.length-1;i>0;i--){
+                    const j = Math.floor(Math.random()*(i+1));
+                    [array[i],array[j]] = [array[j],array[i]];
+                }
+            }
+            
+            //録音全削除
+            document.getElementById("dbReset").onclick = () =>{
+                const result2 = confirm("録音したものを全部削除しますか？");
+                if(!result2) return;
+                const result3 = confirm("元に戻せませんがいいですか？");
+                if(!result3) return;
+                const result4 = confirm("では消しますね？");
+                if(!result4) return;
+                indexedDB.deleteDatabase("audioDB");
+                alert("録音を全部削除しました。ページを更新してください。");
+            }
+
+
+            //シャッフルして再生
+            let shuffledIds = [];
+            let currentIndex = 0
+            let numberOfCards;
+
+            async function prepare() {
+                shuffledIds = await loadIds();
+                shuffle(shuffledIds);
+                currentIndex = 0;                
+            }
+
+            async function playStart(){ //prepare()が終わる前に「次の札」ボタンを押せるのを
+                                        // 防ぐためにasyncとawaitを入れる…らしい
+                const result = confirm("かるたをはじめますか？");
+                if(!result) return;
+                disableDuringPlay();
+                await prepare();
+                alert("準備完了！※読み札が再生されます");
+                //何枚目かの表示を作る
+                if(!numberOfCards){
+                    numberOfCards = document.getElementById("numberOfCards");
+                    numberOfCards.textContent = `${shuffledIds.length}枚目中、${1}枚目`;
+                    
+                }else{
+                    numberOfCards.textContent = `${shuffledIds.length}枚目中、${1}枚目`;
+                }
+                playNext();
+                showListOnlyPlay();
+            }
+
+            let playId;
+            function playNext(){
+                const netxBtn = document.getElementById("playNext");
+                if(currentIndex >= shuffledIds.length){
+                    const result = confirm("すべて再生しました。かるたを終了しますか？")
+                    if(!result) return; 
+                    enableAfterPlay();
+                    showList();
+                    netxBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
+                                            <path d="M660-240v-480h80v480h-80Zm-440 0v-480l360 240-360 240Z"/>
+                                        </svg>次の札`;
+                    return;
+                }
+                playId = shuffledIds[currentIndex];
+                currentIndex++;
+
+                playSound(playId);
+                numberOfCards.textContent = `${shuffledIds.length}枚目中、${currentIndex}枚目`;
+                if(currentIndex === shuffledIds.length){
+                    netxBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor"><path d="M424-312 232-504l57-56 135 135 303-303 56 57-359 359Z"/></svg>終了`;
+                } else {
+                    netxBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
+                                            <path d="M660-240v-480h80v480h-80Zm-440 0v-480l360 240-360 240Z"/>
+                                        </svg>次の札`;
+                }
+            }
+
+            function playBefore(){
+                if(currentIndex >= 2){
+                    currentIndex -= 2;
+                    playNext();
+                }
+            }
+
+            function playOneMore(){
+                playSound(playId);
+            }
+
+
+            // 録音中のボタンの状態
+            function disableDuringRecording(){
+                document.getElementById("recStart").disabled = true;
+                document.getElementById("playBefore").disabled = true;
+                document.getElementById("playStart").disabled = true;
+                document.getElementById("playNext").disabled = true;
+                document.getElementById("playOneMore").disabled = true;
+                document.getElementById("dbReset").disabled = true;
+                console.log("ボタン使用不可！")
+            }
+
+            // 録音後のボタンの状態
+            function enableAfterRecording(){
+                document.getElementById("recStart").disabled = false;
+                document.getElementById("playStart").disabled = false;
+                document.getElementById("dbReset").disabled = false;
+                //document.getElementById("playBefore").disabled = false;
+                //document.getElementById("playNext").disabled = false;
+                //document.getElementById("playOneMore").disabled = false;
+                console.log("ボタン使用可能！")
+            }
+
+            // かるたを遊んでいる最中のボタンの状態
+            function disableDuringPlay(){
+                document.getElementById("recStart").disabled = true;
+                document.getElementById("recStop").disabled = true;
+                document.getElementById("playStart").disabled = true;
+                document.getElementById("dbReset").disabled = true;
+                document.getElementById("playBefore").disabled = false;
+                document.getElementById("playNext").disabled = false;
+                document.getElementById("playOneMore").disabled = false;
+                console.log("プレイ開始。ボタン使用不可！")
+            }
+
+            // かるたを遊んだ後のボタンの状態
+            function enableAfterPlay(){
+                document.getElementById("recStart").disabled = false;
+                document.getElementById("recStop").disabled = false;
+                //document.getElementById("play").disabled = false;
+                //document.getElementById("shufflePlay").disabled = false;
+                document.getElementById("playStart").disabled = false;
+                document.getElementById("dbReset").disabled = false
+                document.getElementById("playBefore").disabled = true;
+                document.getElementById("playNext").disabled = true;
+                document.getElementById("playOneMore").disabled = true;
+                numberOfCards.textContent = "　";
+                console.log("プレイ終了。ボタン使用可能！")
+            }
+            
+            // 保存された音声を確認するボタンの動き
+            function toggleAccordion(){
+                const content = document.getElementById("accordion");
+                if (content.style.maxHeight) {
+                    content.style.maxHeight = null;
+                    arrow.textContent = "▼";
+                } else {
+                    // 中身の高さに合わせて開く
+                    content.style.maxHeight = content.scrollHeight + "px";
+                    arrow.textContent = "▲";
+                }
+            }
+            
+            
+            </script>
+    </body>
+
+</html>
