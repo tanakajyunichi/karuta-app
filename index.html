@@ -492,6 +492,13 @@
                         URL.revokeObjectURL(audioURL);
                         console.log("メモリを解放しました")
                     };
+                    // play() は Promise を返すので、失敗をキャッチできる
+                    audio.play().catch(error => {
+                        console.error("再生エラーの詳細:", error.name, error.message);
+                        if (error.name === "NotAllowedError") {
+                            alert("ブラウザが再生をブロックしました。画面を一度タップしてから再度試してください。");
+                        }
+                    });
 
                     audio.play();
 
@@ -695,5 +702,6 @@
     </body>
 
 </html>
+
 
 
