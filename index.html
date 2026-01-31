@@ -568,14 +568,17 @@
                 currentIndex = 0;                
             }
 
+            let audioUnlocker = new Audio();
             async function playStart(){ //prepare()が終わる前に「次の札」ボタンを押せるのを
                                         // 防ぐためにasyncとawaitを入れる…らしい
-
-
-                 audioUnlocker.play().then(() => {
+                console.log("playStart関数が呼ばれました");
+                // まず一番最初に音声の「道」を作る（Unlock）
+                // これにより、その後のデータベース待ちを経た再生が許可される
+                audioUnlocker.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==";
+                audioUnlocker.play().then(() => {
                     audioUnlocker.pause();
-                    audioUnlocker.currentTime = 0;
-                    console.log("Audio unlocked!");
+                    audioUnlocker.currentTime = 0;//念のため巻き戻しておく
+                    console.log("Audio Unlocked!");
                 }).catch(e => {
                     console.log("Unclock failed(通常は無視してOK):", e);
                 });
@@ -712,6 +715,7 @@
     </body>
 
 </html>
+
 
 
 
