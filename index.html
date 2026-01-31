@@ -570,6 +570,16 @@
 
             async function playStart(){ //prepare()が終わる前に「次の札」ボタンを押せるのを
                                         // 防ぐためにasyncとawaitを入れる…らしい
+
+
+                 audioUnlocker.play().then(() => {
+                    audioUnlocker.pause();
+                    audioUnlocker.currentTime = 0;
+                    console.log("Audio unlocked!");
+                }).catch(e => {
+                    console.log("Unclock failed(通常は無視してOK):", e);
+                });
+
                 const result = confirm("かるたをはじめますか？");
                 if(!result) return;
                 disableDuringPlay();
@@ -702,6 +712,7 @@
     </body>
 
 </html>
+
 
 
 
