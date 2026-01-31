@@ -572,6 +572,11 @@
             async function playStart(){ //prepare()が終わる前に「次の札」ボタンを押せるのを
                                         // 防ぐためにasyncとawaitを入れる…らしい
                 console.log("playStart関数が呼ばれました");
+                
+                const result = confirm("かるたをはじめますか？");
+                if(!result) return;
+                
+                // 「はい」が押された直後にロック解除する。
                 // まず一番最初に音声の「道」を作る（Unlock）
                 // これにより、その後のデータベース待ちを経た再生が許可される
                 audioUnlocker.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==";
@@ -583,11 +588,11 @@
                     console.log("Unclock failed(通常は無視してOK):", e);
                 });
 
-                const result = confirm("かるたをはじめますか？");
-                if(!result) return;
+
+
                 disableDuringPlay();
                 await prepare();
-                alert("準備完了！※読み札が再生されます");
+                // alert("準備完了！※読み札が再生されます");
                 //何枚目かの表示を作る
                 if(!numberOfCards){
                     numberOfCards = document.getElementById("numberOfCards");
@@ -715,6 +720,7 @@
     </body>
 
 </html>
+
 
 
 
