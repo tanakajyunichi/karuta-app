@@ -211,7 +211,7 @@
     </head>
     <body>
 
-        <h2>テスト中★ かるた読み札 ★<br>録音・再生サイトb</h2>
+        <h2>テスト中★ かるた読み札 ★<br>録音・再生サイト</h2>
 
             <button id="recStart">
                 <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
@@ -594,7 +594,7 @@
                 const req = store.get(id);
 
                 req.onsuccess = ()=>{
-                    const audioURL = URL.createObjectURL(1);
+                    const audioURL = URL.createObjectURL(id1);
                     const audio = new Audio(audioURL);
 
                     // 再生が終わったらメモリを開放する※これがないとどんどんメモリに溜まるらしい
@@ -747,6 +747,7 @@
     </body>
 
 </html>
+
 
 
 
