@@ -577,7 +577,7 @@
             async function playStart(){ //prepare()が終わる前に「次の札」ボタンを押せるのを防ぐためにasyncとawaitを入れる
                 console.log("playStart関数が呼ばれました");
                 
-                const result = confirm("かるたをはじめますか？");
+                const result = confirm("かるたをはじめますか？\n※ひとつ目の札が再生されます。");
                 if(!result) return;
                 
                 // iPhone用になるべく早く音をならす
@@ -707,3 +707,4 @@
     </body>
 
 </html>
+
