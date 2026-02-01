@@ -578,7 +578,7 @@
                 
                 // iPhone用になるべく早く音をならす
                 audioUnlocker.play().catch(() => {});//いったん再生
-                playNext();
+                
 
                 disableDuringPlay();
                 await prepare();
@@ -590,7 +590,7 @@
                 }else{
                     numberOfCards.textContent = `${shuffledIds.length}枚目中、${1}枚目`;
                 }
-                
+                playNext();
                 showListOnlyPlay();
             }
 
@@ -704,4 +704,5 @@
     </body>
 
 </html>
+
 
