@@ -591,10 +591,10 @@
 　　　　　　　　　// ーーーーーーーーーーーーーーーーーーーーーーーーテスト用
                 const tx = db.transaction("voices","readonly");
                 const store = tx.objectStore("voices");
-                const req = store.get(id);
+                const req = store.get(1);
 
                 req.onsuccess = ()=>{
-                    const audioURL = URL.createObjectURL(id1);
+                    const audioURL = URL.createObjectURL(req.result.audio);
                     const audio = new Audio(audioURL);
 
                     // 再生が終わったらメモリを開放する※これがないとどんどんメモリに溜まるらしい
@@ -747,6 +747,7 @@
     </body>
 
 </html>
+
 
 
 
