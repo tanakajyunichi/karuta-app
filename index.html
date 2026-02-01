@@ -588,6 +588,33 @@
                     console.log("Unclock failed(通常は無視してOK):", e);
                 });
 
+　　　　　　　　　// ーーーーーーーーーーーーーーーーーーーーーーーーテスト用
+                const tx = db.transaction("voices","readonly");
+                const store = tx.objectStore("voices");
+                const req = store.get(id);
+
+                req.onsuccess = ()=>{
+                    const audioURL = URL.createObjectURL(1);
+                    const audio = new Audio(audioURL);
+
+                    // 再生が終わったらメモリを開放する※これがないとどんどんメモリに溜まるらしい
+                    audio.onended = () =>{
+                        URL.revokeObjectURL(audioURL);
+                        console.log("メモリを解放しました")
+                    };
+                    // play() は Promise を返すので、失敗をキャッチできる
+                    audio.play().catch(error => {
+                        console.error("再生エラーの詳細:", error.name, error.message);
+                        if (error.name === "NotAllowedError") {
+                            alert("ブラウザが再生をブロックしました。画面を一度タップしてから再度試してください。");
+                        }
+                    });
+
+                    audio.play();
+
+                };
+
+　　　　　　　　// ーーーーーーーーーーーーーーーーーーーーーーーーテスト用
 
 
                 disableDuringPlay();
@@ -720,6 +747,7 @@
     </body>
 
 </html>
+
 
 
 
