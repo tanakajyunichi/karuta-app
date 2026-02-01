@@ -211,7 +211,7 @@
     </head>
     <body>
 
-        <h2>aテスト中★ かるた読み札 ★<br>録音・再生サイト</h2>
+        <h2>test★ かるた読み札 ★<br>録音・再生サイト</h2>
 
             <button id="recStart">
                 <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
@@ -485,23 +485,22 @@
 
                 req.onsuccess = ()=>{
                     const audioURL = URL.createObjectURL(req.result.audio);
-                    const audio = new Audio(audioURL);
+                    
+                    audioUnlocker.src = audioURL;
 
                     // 再生が終わったらメモリを開放する※これがないとどんどんメモリに溜まるらしい
-                    audio.onended = () =>{
+                    audioUnlocker.onended = () =>{
                         URL.revokeObjectURL(audioURL);
                         console.log("メモリを解放しました")
                     };
+
                     // play() は Promise を返すので、失敗をキャッチできる
-                    audio.play().catch(error => {
+                    audioUnlocker.play().catch(error => {
                         console.error("再生エラーの詳細:", error.name, error.message);
                         if (error.name === "NotAllowedError") {
                             alert("ブラウザが再生をブロックしました。画面を一度タップしてから再度試してください。");
                         }
                     });
-
-                    audio.play();
-
                 };
             }
 
@@ -568,6 +567,7 @@
                 currentIndex = 0;                
             }
 
+
             let audioUnlocker = new Audio();
             async function playStart(){ //prepare()が終わる前に「次の札」ボタンを押せるのを
                                         // 防ぐためにasyncとawaitを入れる…らしい
@@ -576,61 +576,9 @@
                 const result = confirm("かるたをはじめますか？");
                 if(!result) return;
                 
-                // 「はい」が押された直後にロック解除する。
-                // まず一番最初に音声の「道」を作る（Unlock）
-                // これにより、その後のデータベース待ちを経た再生が許可される
-                // audioUnlocker.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==";
-                // audioUnlocker.play().then(() => {
-                //     audioUnlocker.pause();
-                //     audioUnlocker.currentTime = 0;//念のため巻き戻しておく
-                //     console.log("Audio Unlocked!");
-                // }).catch(e => {
-                //     console.log("Unclock failed(通常は無視してOK):", e);
-                // });
-                audioUnlocker.play().catch(() => {});
-                
-
-　　　　　　　　　// ーーーーーーーーーーーーーーーーーーーーーーーーテスト用
-                const tx = db.transaction("voices","readonly");
-                const store = tx.objectStore("voices");
-                const req = store.get(1);
-
-                req.onsuccess = ()=>{
-                    const audioURL = URL.createObjectURL(req.result.audio);
-
-                    audioUnlocker.src = audioURL;
-
-                    audioUnlocker.onended = ()=>{
-                        URL.revokeObjectURL(audioURL);
-                        console.log("メモリ解放しました");
-                    };
-                    audioUnlocker.play().catch(error =>{
-                        console.error("再生エラー：",error.name,error.message);
-                    });
-                };
-
-                    
-                    // const audio = new Audio(audioURL);
-
-                    // // 再生が終わったらメモリを開放する※これがないとどんどんメモリに溜まるらしい
-                    // audio.onended = () =>{
-                    //     URL.revokeObjectURL(audioURL);
-                    //     console.log("メモリを解放しました")
-                    // };
-                    // // play() は Promise を返すので、失敗をキャッチできる
-                    // audio.play().catch(error => {
-                    //     console.error("再生エラーの詳細:", error.name, error.message);
-                    //     if (error.name === "NotAllowedError") {
-                    //         alert("ブラウザが再生をブロックしました。画面を一度タップしてから再度試してください。");
-                    //     }
-                    // });
-
-                    // audio.play();
-
-                //};
-
-　　　　　　　　// ーーーーーーーーーーーーーーーーーーーーーーーーテスト用
-
+                // iPhone用になるべく早く音をならす
+                audioUnlocker.play().catch(() => {});//いったん再生
+                playNext();
 
                 disableDuringPlay();
                 await prepare();
@@ -639,11 +587,10 @@
                 if(!numberOfCards){
                     numberOfCards = document.getElementById("numberOfCards");
                     numberOfCards.textContent = `${shuffledIds.length}枚目中、${1}枚目`;
-                    
                 }else{
                     numberOfCards.textContent = `${shuffledIds.length}枚目中、${1}枚目`;
                 }
-                playNext();
+                
                 showListOnlyPlay();
             }
 
@@ -709,9 +656,6 @@
                 document.getElementById("recStart").disabled = false;
                 document.getElementById("playStart").disabled = false;
                 document.getElementById("dbReset").disabled = false;
-                //document.getElementById("playBefore").disabled = false;
-                //document.getElementById("playNext").disabled = false;
-                //document.getElementById("playOneMore").disabled = false;
                 console.log("ボタン使用可能！")
             }
 
@@ -732,8 +676,6 @@
             function enableAfterPlay(){
                 document.getElementById("recStart").disabled = false;
                 document.getElementById("recStop").disabled = false;
-                //document.getElementById("play").disabled = false;
-                //document.getElementById("shufflePlay").disabled = false;
                 document.getElementById("playStart").disabled = false;
                 document.getElementById("dbReset").disabled = false
                 document.getElementById("playBefore").disabled = true;
@@ -761,19 +703,4 @@
             </script>
     </body>
 
-</html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+html>
