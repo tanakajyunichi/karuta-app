@@ -211,7 +211,7 @@
     </head>
     <body>
 
-        <h2>テスト中★ かるた読み札 ★<br>録音・再生サイト</h2>
+        <h2>aテスト中★ かるた読み札 ★<br>録音・再生サイト</h2>
 
             <button id="recStart">
                 <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
@@ -579,14 +579,16 @@
                 // 「はい」が押された直後にロック解除する。
                 // まず一番最初に音声の「道」を作る（Unlock）
                 // これにより、その後のデータベース待ちを経た再生が許可される
-                audioUnlocker.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==";
-                audioUnlocker.play().then(() => {
-                    audioUnlocker.pause();
-                    audioUnlocker.currentTime = 0;//念のため巻き戻しておく
-                    console.log("Audio Unlocked!");
-                }).catch(e => {
-                    console.log("Unclock failed(通常は無視してOK):", e);
-                });
+                // audioUnlocker.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==";
+                // audioUnlocker.play().then(() => {
+                //     audioUnlocker.pause();
+                //     audioUnlocker.currentTime = 0;//念のため巻き戻しておく
+                //     console.log("Audio Unlocked!");
+                // }).catch(e => {
+                //     console.log("Unclock failed(通常は無視してOK):", e);
+                // });
+                audioUnlocker.play().catch(() => {});
+                
 
 　　　　　　　　　// ーーーーーーーーーーーーーーーーーーーーーーーーテスト用
                 const tx = db.transaction("voices","readonly");
@@ -595,22 +597,35 @@
 
                 req.onsuccess = ()=>{
                     const audioURL = URL.createObjectURL(req.result.audio);
-                    const audio = new Audio(audioURL);
 
-                    // 再生が終わったらメモリを開放する※これがないとどんどんメモリに溜まるらしい
-                    audio.onended = () =>{
+                    audioUnlocker.src = audioURL;
+
+                    audioUnlocker.onended = ()=>{
                         URL.revokeObjectURL(audioURL);
-                        console.log("メモリを解放しました")
+                        console.log("メモリ解放しました");
                     };
-                    // play() は Promise を返すので、失敗をキャッチできる
-                    audio.play().catch(error => {
-                        console.error("再生エラーの詳細:", error.name, error.message);
-                        if (error.name === "NotAllowedError") {
-                            alert("ブラウザが再生をブロックしました。画面を一度タップしてから再度試してください。");
-                        }
+                    audioUnlocker.play().catch(error =>{
+                        console.error("再生エラー：",error.name,error.message);
                     });
+                };
 
-                    audio.play();
+                    
+                    // const audio = new Audio(audioURL);
+
+                    // // 再生が終わったらメモリを開放する※これがないとどんどんメモリに溜まるらしい
+                    // audio.onended = () =>{
+                    //     URL.revokeObjectURL(audioURL);
+                    //     console.log("メモリを解放しました")
+                    // };
+                    // // play() は Promise を返すので、失敗をキャッチできる
+                    // audio.play().catch(error => {
+                    //     console.error("再生エラーの詳細:", error.name, error.message);
+                    //     if (error.name === "NotAllowedError") {
+                    //         alert("ブラウザが再生をブロックしました。画面を一度タップしてから再度試してください。");
+                    //     }
+                    // });
+
+                    // audio.play();
 
                 };
 
@@ -747,6 +762,7 @@
     </body>
 
 </html>
+
 
 
 
