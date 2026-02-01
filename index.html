@@ -211,7 +211,7 @@
     </head>
     <body>
 
-        <h2>testa★ かるた読み札 ★<br>録音・再生サイト</h2>
+        <h2>★ かるた読み札 ★<br>録音・再生サイト</h2>
 
             <button id="recStart">
                 <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
@@ -308,7 +308,7 @@
             let stopTimerId; 
             document.getElementById("recStart").onclick = async ()=>{
 
-                disableDuringRecording()
+                disableDuringRecording();
 
                 stream = await navigator.mediaDevices.getUserMedia({audio:true});
                 mediaRecorder = new MediaRecorder(stream);
@@ -417,8 +417,10 @@
 
                         const playbtn = document.createElement("button");
                         playbtn.textContent = "再生";
-                        playbtn.onclick = ()=> playSound(element.id);
-
+                        playbtn.onclick = ()=> {
+                          audioUnlocker.play().catch(() => {});
+                          playSound(element.id);
+                        };
                         const delBtn = document.createElement("button");
                         delBtn.textContent = "削除";
                         delBtn.onclick = () =>{
@@ -459,7 +461,10 @@
                     
                         const playbtn = document.createElement("button");
                         playbtn.textContent = "再生";
-                        playbtn.onclick = ()=> playSound(element.id);
+                        playbtn.onclick = ()=> {
+                          audioUnlocker.play().catch(() => {});
+                          playSound(element.id);
+                        };
 
                         const delBtn = document.createElement("button");
                         delBtn.textContent = "削除";
@@ -486,9 +491,9 @@
                 req.onsuccess = ()=>{
                     const audioURL = URL.createObjectURL(req.result.audio);
                     
-                    audioUnlocker.src = audioURL;
+                    audioUnlocker.src = audioURL;//iPhoneはnewすると再生しなくなるのでaudioUnlockerを使いまわす
 
-                    // 再生が終わったらメモリを開放する※これがないとどんどんメモリに溜まるらしい
+                    // 再生が終わったらメモリを開放する※これがないとどんどんメモリに溜まる
                     audioUnlocker.onended = () =>{
                         URL.revokeObjectURL(audioURL);
                         console.log("メモリを解放しました")
@@ -516,7 +521,7 @@
                 };
             }
 
-            //データベースからidだけを読みだして配列にする？
+            //データベースからidだけを読みだして配列にする
             function loadIds(){
                 return new Promise(resolve =>{
                     const tx = db.transaction("voices","readonly");
@@ -569,8 +574,7 @@
 
 
             let audioUnlocker = new Audio();
-            async function playStart(){ //prepare()が終わる前に「次の札」ボタンを押せるのを
-                                        // 防ぐためにasyncとawaitを入れる…らしい
+            async function playStart(){ //prepare()が終わる前に「次の札」ボタンを押せるのを防ぐためにasyncとawaitを入れる
                 console.log("playStart関数が呼ばれました");
                 
                 const result = confirm("かるたをはじめますか？");
@@ -579,7 +583,6 @@
                 // iPhone用になるべく早く音をならす
                 audioUnlocker.play().catch(() => {});//いったん再生
                 
-
                 disableDuringPlay();
                 await prepare();
                 // alert("準備完了！※読み札が再生されます");
@@ -596,13 +599,13 @@
 
             let playId;
             function playNext(){
-                const netxBtn = document.getElementById("playNext");
+                const nextBtn = document.getElementById("playNext");
                 if(currentIndex >= shuffledIds.length){
                     const result = confirm("すべて再生しました。かるたを終了しますか？")
-                    if(!result) return; 
+                    if(!result) return;
                     enableAfterPlay();
                     showList();
-                    netxBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
+                    nextBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
                                             <path d="M660-240v-480h80v480h-80Zm-440 0v-480l360 240-360 240Z"/>
                                         </svg>次の札`;
                     return;
@@ -613,9 +616,9 @@
                 playSound(playId);
                 numberOfCards.textContent = `${shuffledIds.length}枚目中、${currentIndex}枚目`;
                 if(currentIndex === shuffledIds.length){
-                    netxBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor"><path d="M424-312 232-504l57-56 135 135 303-303 56 57-359 359Z"/></svg>終了`;
+                    nextBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor"><path d="M424-312 232-504l57-56 135 135 303-303 56 57-359 359Z"/></svg>終了`;
                 } else {
-                    netxBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
+                    nextBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
                                             <path d="M660-240v-480h80v480h-80Zm-440 0v-480l360 240-360 240Z"/>
                                         </svg>次の札`;
                 }
@@ -704,6 +707,3 @@
     </body>
 
 </html>
-
-
-
