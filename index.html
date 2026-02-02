@@ -556,8 +556,16 @@
                 if(!result3) return;
                 const result4 = confirm("では消しますね？");
                 if(!result4) return;
-                indexedDB.deleteDatabase("audioDB");
-                alert("録音を全部削除しました。ページを更新してください。");
+                if(db){
+                    db.close();
+                }
+                const deleteRequest = indexedDB.deleteDatabase("audioDB");
+
+                deleteRequest.onsuccess = () =>{
+                    console.log("データベースの削除成功ばい");
+                    alert("録音をすべて削除しました。\n最新の状態にするため、ページを再読み込みします");
+                    location.reload();
+                }
             }
 
 
@@ -707,4 +715,5 @@
     </body>
 
 </html>
+
 
