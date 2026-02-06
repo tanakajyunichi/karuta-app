@@ -311,6 +311,10 @@
                 disableDuringRecording();
 
                 stream = await navigator.mediaDevices.getUserMedia({audio:true});
+                const options = {
+                    audioBitsPerSecond:128000
+                };
+                mediaRecorder = new MediaRecorder(stream, options);
                 mediaRecorder = new MediaRecorder(stream);
                 chunks = [];
 
@@ -715,5 +719,6 @@
     </body>
 
 </html>
+
 
 
